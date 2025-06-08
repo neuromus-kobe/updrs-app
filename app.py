@@ -115,7 +115,11 @@ def save_to_csv():
         df = pd.concat([existing_df, df], ignore_index=True)
     
     df.to_csv(filepath, index=False, encoding='utf-8-sig')
-    return filepath
+    
+    # ダウンロード用CSV データを生成
+    csv_data = df.to_csv(index=False, encoding='utf-8-sig')
+    
+    return filepath, csv_data
 
 # メインUI
 st.title("🏥 MDS-UPDRS Part III 評価システム")
