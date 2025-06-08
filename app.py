@@ -181,8 +181,14 @@ with st.sidebar:
 if not st.session_state.patient_id:
     st.warning("⚠️ 左のサイドバーで患者IDを入力してください")
 else:
+    # 全項目完了チェック
+    all_completed = len(st.session_state.scores) == len(ITEM_ORDER)
+    
     # ナビゲーションボタン
-    col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
+    if all_completed:
+        col1, col2, col3, col4, col5, col6 = st.columns([1, 1, 2, 1, 1, 1])
+    else:
+        col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
     
     with col1:
         if st.button("◀ 前へ", disabled=st.session_state.current_item_index == 0):
@@ -213,12 +219,24 @@ else:
     
     with col5:
         if st.button("🔄 リセット"):
-            if st.confirm("すべての評価をリセットしますか？"):
-                st.session_state.scores = {}
-                st.session_state.current_item_index = 0
-                st.rerun()
+            st.session_state.scores = {}
+            st.session_state.current_item_index = 0
+            st.rerun()
+    
+    # 完了ボタン（全項目完了時のみ表示）
+    if all_completed:
+        with col6:
+            if st.button("✅ 完了", type="primary"):
+                filepath = save_to_csv()
+                st.success(f"🎉 評価完了！結果を保存しました: {os.path.basename(filepath)}")
+                st.balloons()
     
     st.divider()
+    
+    # 全項目完了時の表示
+    if all_completed:
+        st.success("🎉 すべての項目の評価が完了しました！")
+        st.info("「完了」ボタンを押して結果を保存してください。")
     
     # 現在の評価項目表示
     current_item_key = ITEM_ORDER[st.session_state.current_item_index]
