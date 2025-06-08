@@ -104,7 +104,9 @@ def save_to_csv():
     
     # ファイル名の生成
     filename = f"updrs_evaluations_{datetime.now().strftime('%Y%m%d')}.csv"
-    filepath = os.path.join("/mnt/c/workspace/updrs_evaluation_app", filename)
+    
+    # カレントディレクトリに保存
+    filepath = filename
     
     # 既存ファイルがあれば追記、なければ新規作成
     if os.path.exists(filepath):
@@ -294,14 +296,53 @@ else:
     else:
         st.info("まだ評価された項目はありません")
     
-    # キーボードショートカット情報
+    # キーボードショートカット実装
+    st.markdown("""
+    <script>
+    document.addEventListener('keydown', function(event) {
+        // 矢印キーでの項目移動
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            const prevButton = document.querySelector('[data-testid="stButton"] button:contains("◀ 前へ")');
+            if (prevButton && !prevButton.disabled) {
+                prevButton.click();
+            }
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            const nextButton = document.querySelector('[data-testid="stButton"] button:contains("次へ ▶")');
+            if (nextButton && !nextButton.disabled) {
+                nextButton.click();
+            }
+        }
+        // 数字キーでスコア選択
+        else if (event.key >= '0' && event.key <= '4') {
+            event.preventDefault();
+            const radioButtons = document.querySelectorAll('input[type="radio"]');
+            const targetIndex = parseInt(event.key);
+            if (radioButtons[targetIndex]) {
+                radioButtons[targetIndex].click();
+            }
+        }
+        // Ctrl+Sで保存
+        else if (event.ctrlKey && event.key === 's') {
+            event.preventDefault();
+            const saveButton = document.querySelector('[data-testid="stButton"] button:contains("💾 保存")');
+            if (saveButton) {
+                saveButton.click();
+            }
+        }
+    });
+    </script>
+    """, unsafe_allow_html=True)
+    
+    # 使用方法とキーボードショートカット情報
     with st.expander("💡 使用方法とキーボードショートカット"):
         st.markdown("""
         **使用方法:**
         1. サイドバーで患者情報を入力
         2. 各項目を順番に評価（「前へ」「次へ」ボタンまたは項目選択）
         3. 各項目でスコアを選択
-        4. 全項目完了後、「保存」ボタンでCSVファイルに保存
+        4. 全項目完了後、「完了」ボタンでCSVファイルに保存
         
         **キーボードショートカット:**
         - `←` / `→`: 前後の項目に移動
@@ -312,6 +353,7 @@ else:
         - 自動サブタイプ判定（MDS-UPDRS基準と従来基準）
         - リアルタイム進捗表示
         - CSV形式での結果保存
+        - キーボードショートカット対応
         """)
 
 # フッター
