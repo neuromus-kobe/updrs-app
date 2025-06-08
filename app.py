@@ -185,10 +185,11 @@ if not st.session_state.patient_id:
 else:
     # 全項目完了チェック
     all_completed = len(st.session_state.scores) == len(ITEM_ORDER)
+    is_last_item = st.session_state.current_item_index >= len(ITEM_ORDER) - 1
     
-    # ナビゲーションボタン
-    if all_completed:
-        col1, col2, col3, col4, col5, col6 = st.columns([1, 1, 2, 1, 1, 1])
+    # ナビゲーションボタン - 最後の項目では完了ボタンを表示
+    if is_last_item:
+        col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
     else:
         col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
     
@@ -197,8 +198,18 @@ else:
             st.session_state.current_item_index -= 1
     
     with col2:
-        if st.button("次へ ▶", disabled=st.session_state.current_item_index >= len(ITEM_ORDER) - 1):
-            st.session_state.current_item_index += 1
+        if is_last_item:
+            # 最後の項目では完了ボタンを表示
+            if st.button("✅ 完了", type="primary"):
+                if all_completed:
+                    filepath = save_to_csv()
+                    st.success(f"🎉 評価完了！結果を保存しました: {os.path.basename(filepath)}")
+                    st.balloons()
+                else:
+                    st.error("すべての項目を評価してください")
+        else:
+            if st.button("次へ ▶"):
+                st.session_state.current_item_index += 1
     
     with col3:
         # 項目選択
@@ -225,13 +236,6 @@ else:
             st.session_state.current_item_index = 0
             st.rerun()
     
-    # 完了ボタン（全項目完了時のみ表示）
-    if all_completed:
-        with col6:
-            if st.button("✅ 完了", type="primary"):
-                filepath = save_to_csv()
-                st.success(f"🎉 評価完了！結果を保存しました: {os.path.basename(filepath)}")
-                st.balloons()
     
     st.divider()
     
@@ -296,44 +300,45 @@ else:
     else:
         st.info("まだ評価された項目はありません")
     
-    # キーボードショートカット実装
-    st.markdown("""
-    <script>
-    document.addEventListener('keydown', function(event) {
-        // 矢印キーでの項目移動
-        if (event.key === 'ArrowLeft') {
-            event.preventDefault();
-            const prevButton = document.querySelector('[data-testid="stButton"] button:contains("◀ 前へ")');
-            if (prevButton && !prevButton.disabled) {
-                prevButton.click();
-            }
-        } else if (event.key === 'ArrowRight') {
-            event.preventDefault();
-            const nextButton = document.querySelector('[data-testid="stButton"] button:contains("次へ ▶")');
-            if (nextButton && !nextButton.disabled) {
-                nextButton.click();
-            }
-        }
-        // 数字キーでスコア選択
-        else if (event.key >= '0' && event.key <= '4') {
-            event.preventDefault();
-            const radioButtons = document.querySelectorAll('input[type="radio"]');
-            const targetIndex = parseInt(event.key);
-            if (radioButtons[targetIndex]) {
-                radioButtons[targetIndex].click();
-            }
-        }
-        // Ctrl+Sで保存
-        else if (event.ctrlKey && event.key === 's') {
-            event.preventDefault();
-            const saveButton = document.querySelector('[data-testid="stButton"] button:contains("💾 保存")');
-            if (saveButton) {
-                saveButton.click();
-            }
-        }
-    });
-    </script>
-    """, unsafe_allow_html=True)
+    # キーボードショートカット実装 - streamlit-components-templateを使用
+    keyboard_shortcuts = st.empty()
+    
+    # シンプルなキーボードインターフェース
+    with st.container():
+        st.markdown("""
+        <div style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; font-size: 12px; z-index: 1000;">
+            <strong>キーボードショートカット:</strong><br>
+            ←/→: 項目移動 | 0-4: スコア選択
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # キーボードイベントをキャッチするためのテキスト入力（非表示）
+    keyboard_input = st.text_input(
+        "キーボード入力",
+        value="",
+        key="keyboard_handler",
+        help="このフィールドにフォーカスしてキーボードショートカットを使用",
+        label_visibility="collapsed"
+    )
+    
+    # キーボード入力の処理
+    if keyboard_input:
+        if keyboard_input == "left" or keyboard_input == "←":
+            if st.session_state.current_item_index > 0:
+                st.session_state.current_item_index -= 1
+                st.session_state.keyboard_handler = ""
+                st.rerun()
+        elif keyboard_input == "right" or keyboard_input == "→":
+            if st.session_state.current_item_index < len(ITEM_ORDER) - 1:
+                st.session_state.current_item_index += 1
+                st.session_state.keyboard_handler = ""
+                st.rerun()
+        elif keyboard_input in ["0", "1", "2", "3", "4"]:
+            score = int(keyboard_input)
+            current_item_key = ITEM_ORDER[st.session_state.current_item_index]
+            st.session_state.scores[current_item_key] = score
+            st.session_state.keyboard_handler = ""
+            st.rerun()
     
     # 使用方法とキーボードショートカット情報
     with st.expander("💡 使用方法とキーボードショートカット"):
@@ -345,15 +350,16 @@ else:
         4. 全項目完了後、「完了」ボタンでCSVファイルに保存
         
         **キーボードショートカット:**
-        - `←` / `→`: 前後の項目に移動
+        - キーボード入力フィールドにフォーカスして以下を入力:
+        - `left` または `←`: 前の項目に移動
+        - `right` または `→`: 次の項目に移動
         - `0`-`4`: スコアを選択
-        - `Ctrl+S`: 保存
         
         **機能:**
         - 自動サブタイプ判定（MDS-UPDRS基準と従来基準）
         - リアルタイム進捗表示
         - CSV形式での結果保存
-        - キーボードショートカット対応
+        - キーボードショートカット対応（テキスト入力フィールド経由）
         """)
 
 # フッター
