@@ -1,6 +1,6 @@
 """
 UPDRS Part III 評価アプリケーション
-VSCMCPを利用したUPDRS評価システム
+UPDRS評価システム
 """
 
 import streamlit as st
@@ -117,7 +117,7 @@ def save_to_csv():
 # メインUI
 st.title("🏥 MDS-UPDRS Part III 評価システム")
 st.markdown("### 運動機能検査（Motor Examination）")
-st.info("🔍 VSCMCPを利用したUPDRS評価アプリケーション")
+st.info("🔍 UPDRS評価アプリケーション")
 
 # サイドバー
 with st.sidebar:
@@ -298,4 +298,4 @@ else:
 
 # フッター
 st.markdown("---")
-st.markdown("© 2024 UPDRS Part III 評価システム - VSCMCPを利用したアプリケーション")
+st.markdown("© 2024 UPDRS Part III 評価システム")
