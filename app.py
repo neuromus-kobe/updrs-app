@@ -116,8 +116,8 @@ def save_to_csv():
     
     df.to_csv(filepath, index=False, encoding='utf-8-sig')
     
-    # ダウンロード用CSV データを生成
-    csv_data = df.to_csv(index=False, encoding='utf-8-sig')
+    # ダウンロード用CSV データを生成（Excel互換性を高めるためBOM付きUTF-8）
+    csv_data = df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
     
     return filepath, csv_data
 
@@ -211,14 +211,15 @@ else:
                     filepath, csv_data = save_to_csv()
                     st.success(f"🎉 評価完了！結果を保存しました: {os.path.basename(filepath)}")
                     
-                    # CSVダウンロードボタンを表示
+                    # CSVダウンロードボタンを表示（Excel対応）
                     download_filename = f"updrs_{st.session_state.patient_id}_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
                     st.download_button(
-                        label="💾 CSVファイルをダウンロード",
+                        label="💾 CSVファイルをダウンロード（Excel対応）",
                         data=csv_data,
                         file_name=download_filename,
                         mime="text/csv",
-                        type="secondary"
+                        type="secondary",
+                        help="Excelで日本語が文字化けしないようにBOM付きUTF-8でエンコードされています"
                     )
                     st.balloons()
                 else:
@@ -248,14 +249,15 @@ else:
                 filepath, csv_data = save_to_csv()
                 st.success(f"✅ 保存しました: {os.path.basename(filepath)}")
                 
-                # CSVダウンロードボタンを表示
+                # CSVダウンロードボタンを表示（Excel対応）
                 download_filename = f"updrs_{st.session_state.patient_id}_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
                 st.download_button(
-                    label="💾 CSVファイルをダウンロード",
+                    label="💾 CSVファイルをダウンロード（Excel対応）",
                     data=csv_data,
                     file_name=download_filename,
                     mime="text/csv",
-                    type="secondary"
+                    type="secondary",
+                    help="Excelで日本語が文字化けしないようにBOM付きUTF-8でエンコードされています"
                 )
     
     with col5:
