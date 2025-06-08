@@ -204,11 +204,23 @@ else:
             # 最後の項目では完了ボタンを表示
             if st.button("✅ 完了", type="primary"):
                 if all_completed:
-                    filepath = save_to_csv()
+                    filepath, csv_data = save_to_csv()
                     st.success(f"🎉 評価完了！結果を保存しました: {os.path.basename(filepath)}")
+                    
+                    # CSVダウンロードボタンを表示
+                    download_filename = f"updrs_{st.session_state.patient_id}_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+                    st.download_button(
+                        label="💾 CSVファイルをダウンロード",
+                        data=csv_data,
+                        file_name=download_filename,
+                        mime="text/csv",
+                        type="secondary"
+                    )
                     st.balloons()
                 else:
-                    st.error("すべての項目を評価してください")
+                    # 未入力の項目を表示
+                    missing_items = [item for item in ITEM_ORDER if item not in st.session_state.scores]
+                    st.error(f"以下の項目が未入力です: {', '.join(missing_items)}")
         else:
             if st.button("次へ ▶"):
                 st.session_state.current_item_index += 1
@@ -229,8 +241,18 @@ else:
             if len(st.session_state.scores) == 0:
                 st.error("評価項目が入力されていません")
             else:
-                filepath = save_to_csv()
+                filepath, csv_data = save_to_csv()
                 st.success(f"✅ 保存しました: {os.path.basename(filepath)}")
+                
+                # CSVダウンロードボタンを表示
+                download_filename = f"updrs_{st.session_state.patient_id}_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+                st.download_button(
+                    label="💾 CSVファイルをダウンロード",
+                    data=csv_data,
+                    file_name=download_filename,
+                    mime="text/csv",
+                    type="secondary"
+                )
     
     with col5:
         if st.button("🔄 リセット"):
@@ -255,7 +277,6 @@ else:
     st.info(f"💡 **評価方法**: {current_item['description']}")
     
     # スコア選択
-    st.markdown("### スコアを選択してください")
     
     # 現在のスコア取得
     current_score = st.session_state.scores.get(current_item_key, None)
