@@ -10,6 +10,13 @@ from datetime import datetime
 import os
 from updrs_definitions import UPDRS_ITEMS, ITEM_ORDER, TREMOR_ITEMS, AKINETIC_RIGID_ITEMS
 
+try:
+    from streamlit_keyup import st_keyup
+    KEYUP_AVAILABLE = True
+except ImportError:
+    KEYUP_AVAILABLE = False
+    st.warning("⚠️ streamlit-keyupがインストールされていません。キーボードショートカット機能は無効です。")
+
 # ページ設定
 st.set_page_config(
     page_title="UPDRS Part III 評価システム",
@@ -300,45 +307,48 @@ else:
     else:
         st.info("まだ評価された項目はありません")
     
-    # キーボードショートカット実装 - streamlit-components-templateを使用
-    keyboard_shortcuts = st.empty()
-    
-    # シンプルなキーボードインターフェース
-    with st.container():
+    # キーボードショートカット実装 - streamlit-keyupを使用
+    if KEYUP_AVAILABLE:
+        # ヘルプボックスの表示
         st.markdown("""
         <div style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; font-size: 12px; z-index: 1000;">
             <strong>キーボードショートカット:</strong><br>
             ←/→: 項目移動 | 0-4: スコア選択
         </div>
         """, unsafe_allow_html=True)
-    
-    # キーボードイベントをキャッチするためのテキスト入力（非表示）
-    keyboard_input = st.text_input(
-        "キーボード入力",
-        value="",
-        key="keyboard_handler",
-        help="このフィールドにフォーカスしてキーボードショートカットを使用",
-        label_visibility="collapsed"
-    )
-    
-    # キーボード入力の処理
-    if keyboard_input:
-        if keyboard_input == "left" or keyboard_input == "←":
-            if st.session_state.current_item_index > 0:
-                st.session_state.current_item_index -= 1
-                st.session_state.keyboard_handler = ""
+        
+        # streamlit-keyupでキーボードイベントをキャッチ
+        key_pressed = st_keyup(
+            "キーボードショートカット用",
+            placeholder="キーボードショートカットを使用するにはここをクリック",
+            key="keyup_handler",
+            debounce=100
+        )
+        
+        # キーボード入力の処理
+        if key_pressed:
+            # 矢印キーでのナビゲーション
+            if key_pressed == "ArrowLeft":
+                if st.session_state.current_item_index > 0:
+                    st.session_state.current_item_index -= 1
+                    st.rerun()
+            elif key_pressed == "ArrowRight":
+                if st.session_state.current_item_index < len(ITEM_ORDER) - 1:
+                    st.session_state.current_item_index += 1
+                    st.rerun()
+            # 数字キーでスコア選択
+            elif key_pressed in ["0", "1", "2", "3", "4"]:
+                score = int(key_pressed)
+                current_item_key = ITEM_ORDER[st.session_state.current_item_index]
+                st.session_state.scores[current_item_key] = score
                 st.rerun()
-        elif keyboard_input == "right" or keyboard_input == "→":
-            if st.session_state.current_item_index < len(ITEM_ORDER) - 1:
-                st.session_state.current_item_index += 1
-                st.session_state.keyboard_handler = ""
-                st.rerun()
-        elif keyboard_input in ["0", "1", "2", "3", "4"]:
-            score = int(keyboard_input)
-            current_item_key = ITEM_ORDER[st.session_state.current_item_index]
-            st.session_state.scores[current_item_key] = score
-            st.session_state.keyboard_handler = ""
-            st.rerun()
+            # Ctrl+Sで保存
+            elif key_pressed == "s" and st.session_state.get("ctrl_pressed", False):
+                if len(st.session_state.scores) > 0:
+                    filepath = save_to_csv()
+                    st.success(f"✅ 保存しました: {os.path.basename(filepath)}")
+    else:
+        st.info("キーボードショートカットを使用するには `pip install streamlit-keyup` を実行してください")
     
     # 使用方法とキーボードショートカット情報
     with st.expander("💡 使用方法とキーボードショートカット"):
@@ -350,16 +360,16 @@ else:
         4. 全項目完了後、「完了」ボタンでCSVファイルに保存
         
         **キーボードショートカット:**
-        - キーボード入力フィールドにフォーカスして以下を入力:
-        - `left` または `←`: 前の項目に移動
-        - `right` または `→`: 次の項目に移動
+        - キーボードショートカットフィールドをクリックしてフォーカスした後:
+        - `←` / `→`: 前後の項目に移動
         - `0`-`4`: スコアを選択
+        - `Ctrl+S`: 保存
         
         **機能:**
         - 自動サブタイプ判定（MDS-UPDRS基準と従来基準）
         - リアルタイム進捗表示
         - CSV形式での結果保存
-        - キーボードショートカット対応（テキスト入力フィールド経由）
+        - キーボードショートカット対応（streamlit-keyup使用）
         """)
 
 # フッター
