@@ -10,19 +10,19 @@ from datetime import datetime
 import os
 from updrs_definitions import UPDRS_ITEMS, ITEM_ORDER, TREMOR_ITEMS, AKINETIC_RIGID_ITEMS
 
-try:
-    from streamlit_keyup import st_keyup
-    KEYUP_AVAILABLE = True
-except ImportError:
-    KEYUP_AVAILABLE = False
-    st.warning("⚠️ streamlit-keyupがインストールされていません。キーボードショートカット機能は無効です。")
-
-# ページ設定
+# ページ設定（最初に実行必須）
 st.set_page_config(
     page_title="UPDRS Part III 評価システム",
     page_icon="🏥",
     layout="wide"
 )
+
+# streamlit-keyupのインポートチェック
+try:
+    from streamlit_keyup import st_keyup
+    KEYUP_AVAILABLE = True
+except ImportError:
+    KEYUP_AVAILABLE = False
 
 # セッション状態の初期化
 if 'scores' not in st.session_state:
@@ -127,6 +127,10 @@ def save_to_csv():
 st.title("🏥 MDS-UPDRS Part III 評価システム")
 st.markdown("### 運動機能検査（Motor Examination）")
 st.info("🔍 UPDRS評価アプリケーション")
+
+# streamlit-keyupの利用可能性を通知
+if not KEYUP_AVAILABLE:
+    st.warning("⚠️ streamlit-keyupがインストールされていません。キーボードショートカット機能は無効です。")
 
 # サイドバー
 with st.sidebar:
@@ -347,8 +351,6 @@ else:
                 if len(st.session_state.scores) > 0:
                     filepath = save_to_csv()
                     st.success(f"✅ 保存しました: {os.path.basename(filepath)}")
-    else:
-        st.info("キーボードショートカットを使用するには `pip install streamlit-keyup` を実行してください")
     
     # 使用方法とキーボードショートカット情報
     with st.expander("💡 使用方法とキーボードショートカット"):
